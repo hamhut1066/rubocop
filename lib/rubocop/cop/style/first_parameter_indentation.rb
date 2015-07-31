@@ -39,14 +39,16 @@ module RuboCop
         private
 
         def message(arg_node)
+          return 'Bad indentation of the first parameter.' if arg_node.nil?
+
           send_node = arg_node.parent
           text = base_range(send_node, arg_node).source.strip
           base = if text !~ /\n/ && special_inner_call_indentation?(send_node)
                    "`#{text}`"
                  elsif text.lines.reverse_each.first =~ /^\s*#/
-                   'the previous line (not counting the comment)'
+                   'the start of the previous line (not counting the comment)'
                  else
-                   'the previous line'
+                   'the start of the previous line'
                  end
           format('Indent the first parameter one step more than %s.', base)
         end

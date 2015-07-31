@@ -8,10 +8,10 @@ module RuboCop
       # Built on top of Ruby on Rails style guide (https://github.com/bbatsov/rails-style-guide#time)
       # and the article http://danilenko.org/2012/7/6/rails_timezones/ .
       #
-      # Two styles are supported for this cop. When EnforcedStyle is 'always'
+      # Two styles are supported for this cop. When EnforcedStyle is 'strict'
       # then only use of Time.zone is allowed.
       #
-      # When EnforcedStyle is 'acceptable' then it's also allowed
+      # When EnforcedStyle is 'flexible' then it's also allowed
       # to use Time.in_time_zone.
       #
       # @example
@@ -24,6 +24,7 @@ module RuboCop
       #   Time.zone.parse('2015-03-02 19:05:37')
       #
       #   # no offense only if style is 'acceptable'
+      #   Time.current
       #   DateTime.strptime(str, "%Y-%m-%d %H:%M %Z").in_time_zone
       #   Time.at(timestamp).in_time_zone
       class TimeZone < Cop
@@ -35,18 +36,22 @@ module RuboCop
 
         MSG_LOCALTIME = 'Do not use `Time.localtime` without offset or zone.'
 
+        MSG_CURRENT = 'Do not use `%s`. Use `Time.zone.now` instead.'
+
         TIMECLASS = [:Time, :DateTime]
 
-        DANGER_METHODS = [:now, :local, :new, :strftime, :parse, :at]
+        DANGEROUS_METHODS = [:now, :local, :new, :strftime,
+                             :parse, :at, :current]
 
-        ACCEPTED_METHODS = [:in_time_zone, :utc, :getlocal,
+        ACCEPTED_METHODS = [:current, :in_time_zone, :utc, :getlocal,
                             :iso8601, :jisx0301, :rfc3339,
                             :to_i, :to_f]
 
         def on_const(node)
-          _module, klass = *node
-
-          return unless method_send?(node)
+          mod, klass = *node
+          # we should only check core class
+          # (`DateTime`/`Time` or `::Date`/`::DateTime`)
+          return unless (mod.nil? || mod.cbase_type?) && method_send?(node)
 
           check_time_node(klass, node.parent) if TIMECLASS.include?(klass)
         end
@@ -59,7 +64,7 @@ module RuboCop
 
           return check_localtime(node) if need_check_localtime?(chain)
 
-          method_name = (chain & DANGER_METHODS).join('.')
+          method_name = (chain & DANGEROUS_METHODS).join('.')
 
           message = build_message(klass, method_name, node)
 
@@ -72,11 +77,15 @@ module RuboCop
                    "#{klass}.#{method_name}",
                    acceptable_methods(klass, method_name, node).join(', ')
                   )
+          elsif method_name == 'current'
+            format(MSG_CURRENT,
+                   "#{klass}.#{method_name}"
+                  )
           else
             safe_method_name = safe_method(method_name, node)
             format(MSG,
                    "#{klass}.#{method_name}",
-                   "#{klass}.zone.#{safe_method_name}"
+                   "Time.zone.#{safe_method_name}"
                   )
           end
         end
@@ -128,7 +137,7 @@ module RuboCop
         end
 
         def danger_chain?(chain)
-          (chain & DANGER_METHODS).empty? || !(chain & good_methods).empty?
+          (chain & DANGEROUS_METHODS).empty? || !(chain & good_methods).empty?
         end
 
         def need_check_localtime?(chain)
@@ -136,16 +145,16 @@ module RuboCop
         end
 
         def acceptable?
-          style == :acceptable
+          style == :flexible
         end
 
         def good_methods
-          style == :always ? [:zone] : [:zone] + ACCEPTED_METHODS
+          style == :strict ? [:zone] : [:zone] + ACCEPTED_METHODS
         end
 
         def acceptable_methods(klass, method_name, node)
           acceptable = [
-            "`#{klass}.zone.#{safe_method(method_name, node)}`"
+            "`Time.zone.#{safe_method(method_name, node)}`"
           ]
 
           ACCEPTED_METHODS.each do |am|

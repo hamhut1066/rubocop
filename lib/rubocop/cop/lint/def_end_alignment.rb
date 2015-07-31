@@ -20,7 +20,7 @@ module RuboCop
         include OnMethodDef
         include EndKeywordAlignment
 
-        MSG = '`end` at %d, %d is not aligned with `%s` at %d, %d'
+        MSG = '`end` at %d, %d is not aligned with `%s` at %d, %d.'
 
         def on_method_def(node, _method_name, _args, _body)
           check_offset_of_node(node)
@@ -28,8 +28,8 @@ module RuboCop
 
         def on_send(node)
           receiver, method_name, *args = *node
-          return unless visibility_and_def_on_same_line?(receiver, method_name,
-                                                         args)
+          return unless modifier_and_def_on_same_line?(receiver, method_name,
+                                                       args)
 
           method_def = args.first
           if style == :start_of_line
@@ -49,7 +49,11 @@ module RuboCop
         private
 
         def autocorrect(node)
-          align(node, style == :start_of_line ? node.ancestors.first : node)
+          if style == :start_of_line && node.parent && node.parent.send_type?
+            align(node, node.parent)
+          else
+            align(node, node)
+          end
         end
       end
     end

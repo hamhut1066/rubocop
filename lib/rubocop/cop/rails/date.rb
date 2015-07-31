@@ -12,12 +12,12 @@ module RuboCop
       # The cop also reports warnings when you are using 'to_time' method,
       # because it doesn't know about Rails time zone too.
       #
-      # Two styles are supported for this cop. When EnforcedStyle is 'always'
+      # Two styles are supported for this cop. When EnforcedStyle is 'strict'
       # then the Date methods (today, current, yesterday, tomorrow)
       # are prohibited and the usage of both 'to_time'
       # and 'to_time_in_current_zone' is reported as warning.
       #
-      # When EnforcedStyle is 'acceptable' then only 'Date.today' is prohibited
+      # When EnforcedStyle is 'flexible' then only 'Date.today' is prohibited
       # and only 'to_time' is reported as warning.
       #
       # @example
@@ -46,16 +46,16 @@ module RuboCop
         BAD_DAYS = [:today, :current, :yesterday, :tomorrow]
 
         def on_const(node)
-          _, klass = *node.children
-
-          return unless method_send?(node)
+          mod, klass = *node.children
+          # we should only check core Date class (`Date` or `::Date`)
+          return unless (mod.nil? || mod.cbase_type?) && method_send?(node)
 
           check_date_node(node.parent) if klass == :Date
         end
 
         def on_send(node)
-          method_name = extract_method(node)
-          return unless bad_methods.include?(method_name)
+          receiver, method_name, *_args = *node
+          return unless receiver && bad_methods.include?(method_name)
 
           add_offense(node, :selector,
                       format(MSG_SEND,
@@ -75,7 +75,7 @@ module RuboCop
           add_offense(node, :selector,
                       format(MSG,
                              "Date.#{method_name}",
-                             'Time.zone.today')
+                             "Time.zone.#{method_name}")
                      )
         end
 
@@ -104,7 +104,7 @@ module RuboCop
         end
 
         def good_days
-          style == :always ? [] : [:current, :yesterday, :tomorrow]
+          style == :strict ? [] : [:current, :yesterday, :tomorrow]
         end
 
         def bad_days
@@ -112,7 +112,7 @@ module RuboCop
         end
 
         def bad_methods
-          style == :always ? [:to_time, :to_time_in_current_zone] : [:to_time]
+          style == :strict ? [:to_time, :to_time_in_current_zone] : [:to_time]
         end
       end
     end

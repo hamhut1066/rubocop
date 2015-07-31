@@ -42,6 +42,13 @@ AllCops:
   # default. Change behavior by overriding StyleGuideCopsOnly, or by giving
   # the --only-guide-cops option.
   StyleGuideCopsOnly: false
+  # All cops except the ones in disabled.yml are enabled by default. Change
+  # this behavior by overriding DisabledByDefault. When DisabledByDefault is
+  # true, all cops in the default configuration are disabled, and and only cops
+  # in user configuration are enabled. This makes cops opt-in instead of
+  # opt-out. Note that when DisabledByDefault is true, cops in user
+  # configuration will be enabled even if they don't set the Enabled parameter.
+  DisabledByDefault: false
 
 # Indent private/protected/public as deep as method definitions
 Style/AccessModifierIndentation:
@@ -376,6 +383,12 @@ Style/Encoding:
     - always
   AutoCorrectEncodingComment: '# encoding: utf-8'
 
+Style/ExtraSpacing:
+  # When true, allows most uses of extra spacing if the intent is to align
+  # things with the previous or next line, not counting empty lines or comment
+  # lines.
+  AllowForAlignment: true
+
 Style/FileName:
   # File names listed in AllCops:Include are excluded by default. Add extra
   # excludes here.
@@ -643,6 +656,12 @@ Style/SpaceInsideHashLiteralBraces:
     - space
     - no_space
 
+Style/SpaceInsideStringInterpolation:
+  EnforcedStyle: no_space
+  SupportedStyles:
+    - space
+    - no_space
+
 Style/SymbolProc:
   # A list of method names to be ignored by the check.
   # The names should be fairly unique, otherwise you'll end up ignoring lots of code.
@@ -805,15 +824,15 @@ Rails/ActionFilter:
     - app/controllers/**/*.rb
 
 Rails/Date:
-  # The value `always` disallows usage of `Date.today`, `Date.current`,
+  # The value `strict` disallows usage of `Date.today`, `Date.current`,
   # `Date#to_time` etc.
-  # The value `acceptable` allows usage of `Date.current`, `Date.yesterday`, etc
+  # The value `flexible` allows usage of `Date.current`, `Date.yesterday`, etc
   # (but not `Date.today`) which are overriden by ActiveSupport to handle current
   # time zone.
-  EnforcedStyle: always
+  EnforcedStyle: flexible
   SupportedStyles:
-    - always
-    - acceptable
+    - strict
+    - flexible
 
 Rails/DefaultScope:
   Include:
@@ -847,12 +866,12 @@ Rails/ScopeArgs:
     - app/models/**/*.rb
 
 Rails/TimeZone:
-  # The value `always` means that `Time` should be used with `zone`.
-  # The value `acceptable` allows usage of `in_time_zone` instead of `zone`.
-  EnforcedStyle: always
+  # The value `strict` means that `Time` should be used with `zone`.
+  # The value `flexible` allows usage of `in_time_zone` instead of `zone`.
+  EnforcedStyle: flexible
   SupportedStyles:
-    - always
-    - acceptable
+    - strict
+    - flexible
 
 Rails/Validation:
   Include:

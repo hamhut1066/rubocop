@@ -160,12 +160,12 @@ describe RuboCop::Cop::Style::IndentationWidth do
                                    'comment',
                                    'which spans a few lines',
                                    '=end',
-                                   # The method has no block comment inside, so
-                                   # it's corrected.
-                                   '  def baz',
-                                   # Method contents are also corrected.
-                                   '    do_something',
-                                   '  end',
+                                   # The method has no block comment inside,
+                                   # but it's within a class that has a block
+                                   # comment, so it's not corrected either.
+                                   'def baz',
+                                   'do_something',
+                                   'end',
                                    'end',
                                    'end'].join("\n")
         end
@@ -755,6 +755,13 @@ describe RuboCop::Cop::Style::IndentationWidth do
                           'end'])
           expect(cop.offenses).to be_empty
         end
+
+        it 'with an assignment' do
+          inspect_source(cop,
+                         ['something = def self.foo',
+                          'end'])
+          expect(cop.offenses).to be_empty
+        end
       end
 
       context 'when end is aligned with start of line' do
@@ -768,7 +775,7 @@ describe RuboCop::Cop::Style::IndentationWidth do
           context 'when modifier and def are on the same line' do
             it 'accepts a correctly aligned body' do
               inspect_source(cop,
-                             ['private def test',
+                             ['foo def test',
                               '  something',
                               'end'])
               expect(cop.offenses).to be_empty
@@ -776,11 +783,20 @@ describe RuboCop::Cop::Style::IndentationWidth do
 
             it 'registers an offense for bad indentation of a def body' do
               inspect_source(cop,
-                             ['private def test',
-                              '          something',
-                              '        end'])
+                             ['foo def test',
+                              '      something',
+                              '    end'])
               expect(cop.messages)
-                .to eq(['Use 2 (not 10) spaces for indentation.'])
+                .to eq(['Use 2 (not 6) spaces for indentation.'])
+            end
+
+            it 'registers an offense for bad indentation of a defs body' do
+              inspect_source(cop,
+                             ['foo def self.test',
+                              '      something',
+                              '    end'])
+              expect(cop.messages)
+                .to eq(['Use 2 (not 6) spaces for indentation.'])
             end
           end
         end
@@ -797,19 +813,28 @@ describe RuboCop::Cop::Style::IndentationWidth do
           context 'when modifier and def are on the same line' do
             it 'accepts a correctly aligned body' do
               inspect_source(cop,
-                             ['private def test',
-                              '          something',
+                             ['foo def test',
+                              '      something',
                               'end'])
               expect(cop.offenses).to be_empty
             end
 
             it 'registers an offense for bad indentation of a def body' do
               inspect_source(cop,
-                             ['private def test',
+                             ['foo def test',
                               '  something',
-                              '        end'])
+                              '    end'])
               expect(cop.messages)
-                .to eq(['Use 2 (not -6) spaces for indentation.'])
+                .to eq(['Use 2 (not -2) spaces for indentation.'])
+            end
+
+            it 'registers an offense for bad indentation of a defs body' do
+              inspect_source(cop,
+                             ['foo def self.test',
+                              '  something',
+                              '    end'])
+              expect(cop.messages)
+                .to eq(['Use 2 (not -2) spaces for indentation.'])
             end
           end
         end
@@ -961,6 +986,19 @@ describe RuboCop::Cop::Style::IndentationWidth do
       it 'registers an offense for bad indentation of bodies' do
         inspect_source(cop,
                        ['def my_func',
+                        "  puts 'do something error prone'",
+                        'rescue SomeException',
+                        " puts 'wrongly intended error handling'",
+                        'rescue',
+                        " puts 'wrongly intended error handling'",
+                        'end'])
+        expect(cop.messages).to eq(['Use 2 (not 1) spaces for indentation.',
+                                    'Use 2 (not 1) spaces for indentation.'])
+      end
+
+      it 'registers an offense for bad indent of defs bodies with a modifier' do
+        inspect_source(cop,
+                       ['foo def self.my_func',
                         "  puts 'do something error prone'",
                         'rescue SomeException',
                         " puts 'wrongly intended error handling'",

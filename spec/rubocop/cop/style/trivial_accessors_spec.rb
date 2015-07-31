@@ -161,6 +161,17 @@ describe RuboCop::Cop::Style::TrivialAccessors, :config do
     expect(cop.offenses).to be_empty
   end
 
+  it 'accepts writer in a module' do
+    inspect_source(cop,
+                   ['module Foo',
+                    '  def bar=(bar)',
+                    '    @bar = bar',
+                    '  end',
+                    'end'])
+
+    expect(cop.offenses).to be_empty
+  end
+
   context 'exact name match disabled' do
     let(:cop_config) { { 'ExactNameMatch' => false } }
 
@@ -175,6 +186,18 @@ describe RuboCop::Cop::Style::TrivialAccessors, :config do
       inspect_source(cop, ['def foo',
                            '  @f',
                            'end'])
+      expect(cop.offenses.size).to eq(1)
+    end
+  end
+
+  context 'disallow predicates' do
+    let(:cop_config) { { 'AllowPredicates' => false } }
+
+    it 'does not accept predicate-like reader' do
+      inspect_source(cop,
+                     ['def foo?',
+                      '  @foo',
+                      'end'])
       expect(cop.offenses.size).to eq(1)
     end
   end
@@ -208,6 +231,21 @@ describe RuboCop::Cop::Style::TrivialAccessors, :config do
                       '   @bar = bar',
                       ' end'])
       expect(cop.offenses).to be_empty
+    end
+
+    context 'with AllowPredicates: false' do
+      let(:cop_config) do
+        { 'AllowPredicates' => false,
+          'Whitelist' => ['foo?'] }
+      end
+
+      it 'accepts whitelisted predicate' do
+        inspect_source(cop,
+                       [' def foo?',
+                        '   @foo',
+                        ' end'])
+        expect(cop.offenses).to be_empty
+      end
     end
   end
 
@@ -266,6 +304,20 @@ describe RuboCop::Cop::Style::TrivialAccessors, :config do
       it 'does not autocorrect' do
         expect(autocorrect_source(cop, source))
           .to eq(source.join("\n"))
+        expect(cop.offenses.map(&:corrected?)).to eq [false]
+      end
+    end
+
+    context 'predicate reader, with AllowPredicates: false' do
+      let(:cop_config) { { 'AllowPredicates' => false } }
+      let(:source) do
+        ['def foo?',
+         '  @foo',
+         'end']
+      end
+
+      it 'does not autocorrect' do
+        expect(autocorrect_source(cop, source)).to eq(source.join("\n"))
         expect(cop.offenses.map(&:corrected?)).to eq [false]
       end
     end

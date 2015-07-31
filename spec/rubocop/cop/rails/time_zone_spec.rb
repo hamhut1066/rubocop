@@ -5,25 +5,42 @@ require 'spec_helper'
 describe RuboCop::Cop::Rails::TimeZone, :config do
   subject(:cop) { described_class.new(config) }
 
-  context 'when EnforcedStyle is "always"' do
-    let(:cop_config) { { 'EnforcedStyle' => 'always' } }
+  context 'when EnforcedStyle is "strict"' do
+    let(:cop_config) { { 'EnforcedStyle' => 'strict' } }
 
     described_class::TIMECLASS.each do |klass|
       it "registers an offense for #{klass}.now" do
         inspect_source(cop, "#{klass}.now")
         expect(cop.offenses.size).to eq(1)
+        expect(cop.offenses.first.message).to include('`Time.zone.now`')
+      end
+
+      it "registers an offense  for #{klass}.current" do
+        inspect_source(cop, "#{klass}.current")
+        expect(cop.offenses.size).to eq(1)
+        expect(cop.offenses.first.message).to include('`Time.zone.now`')
       end
 
       it "registers an offense for #{klass}.new without argument" do
         inspect_source(cop, "#{klass}.new")
         expect(cop.offenses.size).to eq(1)
-        expect(cop.offenses.first.message).to include('Time.zone.now')
+        expect(cop.offenses.first.message).to include('`Time.zone.now`')
       end
 
       it "registers an offense for #{klass}.new with argument" do
         inspect_source(cop, "#{klass}.new(2012, 6, 10, 12, 00)")
         expect(cop.offenses.size).to eq(1)
-        expect(cop.offenses.first.message).to include('Time.zone.local')
+        expect(cop.offenses.first.message).to include('`Time.zone.local`')
+      end
+
+      it "registers an offense for ::#{klass}.now" do
+        inspect_source(cop, "::#{klass}.now")
+        expect(cop.offenses.size).to eq(1)
+      end
+
+      it "accepts Some::#{klass}.now" do
+        inspect_source(cop, "Some::#{klass}.forward(0).strftime('%H:%M')")
+        expect(cop.offenses).to be_empty
       end
 
       described_class::ACCEPTED_METHODS.each do |a_method|
@@ -135,23 +152,35 @@ describe RuboCop::Cop::Rails::TimeZone, :config do
       inspect_source(cop, "Time.zone.parse('12:00').localtime('+03:00')")
       expect(cop.offenses).to be_empty
     end
+
+    described_class::DANGEROUS_METHODS.each do |a_method|
+      it "accepts Some::Time.#{a_method}" do
+        inspect_source(cop, "Some::Time.#{a_method}")
+        expect(cop.offenses).to be_empty
+      end
+    end
   end
 
-  context 'when EnforcedStyle is "acceptable"' do
-    let(:cop_config) { { 'EnforcedStyle' => 'acceptable' } }
+  context 'when EnforcedStyle is "flexible"' do
+    let(:cop_config) { { 'EnforcedStyle' => 'flexible' } }
 
     described_class::TIMECLASS.each do |klass|
       it "registers an offense for #{klass}.now" do
         inspect_source(cop, "#{klass}.now")
         expect(cop.offenses.size).to eq(1)
-        expect(cop.offenses.first.message).to include('Use one of')
 
-        expect(cop.offenses.first.message).to include("#{klass}.zone.now")
+        expect(cop.offenses.first.message).to include('Use one of')
+        expect(cop.offenses.first.message).to include('`Time.zone.now`')
 
         described_class::ACCEPTED_METHODS.each do |a_method|
           expect(cop.offenses.first.message)
             .to include("#{klass}.now.#{a_method}")
         end
+      end
+
+      it "accepts #{klass}.current" do
+        inspect_source(cop, "#{klass}.current")
+        expect(cop.offenses).to be_empty
       end
 
       described_class::ACCEPTED_METHODS.each do |a_method|
@@ -164,6 +193,13 @@ describe RuboCop::Cop::Rails::TimeZone, :config do
       it 'accepts #{klass}.zone.now' do
         inspect_source(cop, "#{klass}.zone.now")
         expect(cop.offenses).to be_empty
+      end
+
+      described_class::DANGEROUS_METHODS.each do |a_method|
+        it "accepts #{klass}.current.#{a_method}" do
+          inspect_source(cop, "#{klass}.current.#{a_method}")
+          expect(cop.offenses).to be_empty
+        end
       end
     end
 

@@ -243,9 +243,18 @@ Style/EvenOdd:
   StyleGuide: 'https://github.com/bbatsov/ruby-style-guide#predicate-methods'
   Enabled: true
 
+Style/ExtraSpacing:
+  Description: 'Do not use unnecessary spacing.'
+  Enabled: true
+
 Style/FileName:
   Description: 'Use snake_case for source file names.'
   StyleGuide: 'https://github.com/bbatsov/ruby-style-guide#snake-case-files'
+  Enabled: true
+
+Style/InitialIndentation:
+  Description: >-
+    Checks the indentation of the first non-blank non-comment line in a file.
   Enabled: true
 
 Style/FirstParameterIndentation:
@@ -447,6 +456,13 @@ Style/OpMethod:
   StyleGuide: 'https://github.com/bbatsov/ruby-style-guide#other-arg'
   Enabled: true
 
+Style/OptionalArguments:
+  Description: >-
+                 Checks for optional arguments that do not appear at the end
+                 of the argument list
+  StyleGuide: 'https://github.com/bbatsov/ruby-style-guide#optional-arguments'
+  Enabled: true
+
 Style/ParallelAssignment:
   Description: >-
                   Check for simple usages of parallel assignment.
@@ -516,6 +532,10 @@ Style/RedundantSelf:
 Style/RegexpLiteral:
   Description: 'Use / or %r around regular expressions.'
   StyleGuide: 'https://github.com/bbatsov/ruby-style-guide#percent-r'
+  Enabled: true
+
+Style/RescueEnsureAlignment:
+  Description: 'Align rescues and ensures correctly.'
   Enabled: true
 
 Style/RescueModifier:
@@ -844,6 +864,10 @@ Lint/BlockAlignment:
   Description: 'Align block ends correctly.'
   Enabled: true
 
+Lint/CircularArgumentReference:
+  Description: "Don't refer to the keyword argument in the default value."
+  Enabled: true
+
 Lint/ConditionPosition:
   Description: >-
                  Checks for condition placed in a confusing position relative to
@@ -975,7 +999,10 @@ Lint/UnderscorePrefixedVariableName:
   Enabled: true
 
 Lint/UnneededDisable:
-  Description: 'Checks for rubocop:disable comments that can be removed.'
+  Description: >-
+                 Checks for rubocop:disable comments that can be removed.
+                 Note: this cop is not disabled when disabling all cops.
+                 It must be explicitly disabled.
   Enabled: true
 
 Lint/UnusedBlockArgument:
@@ -1063,6 +1090,14 @@ Performance/Size:
                   Use `size` instead of `count` for counting
                   the number of elements in `Array` and `Hash`.
   Reference: 'https://github.com/JuanitoFatas/fast-ruby#arraycount-vs-arraysize-code'
+  Enabled: true
+
+Performance/StringReplacement:
+  Description: >-
+                  Use `tr` instead of `gsub` when you are replacing the same
+                  number of characters. Use `delete` instead of `gsub` when
+                  you are deleting characters.
+  Reference: 'https://github.com/JuanitoFatas/fast-ruby#stringgsub-vs-stringtr-code'
   Enabled: true
 
 ##################### Rails ##################################

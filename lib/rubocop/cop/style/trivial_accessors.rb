@@ -9,17 +9,25 @@ module RuboCop
         MSG = 'Use `attr_%s` to define trivial %s methods.'
 
         def on_def(node)
+          return if in_module?(node)
           method_name, args, body = *node
           on_method_def(node, method_name, args, body)
         end
 
         def on_defs(node)
+          return if in_module?(node)
           return if ignore_class_methods?
           _scope, method_name, args, body = *node
           on_method_def(node, method_name, args, body)
         end
 
         private
+
+        def in_module?(node)
+          pnode = node.parent
+          pnode = pnode.parent if pnode && pnode.type == :begin
+          !pnode.nil? && pnode.type == :module
+        end
 
         def on_method_def(node, method_name, args, body)
           kind = if trivial_reader?(method_name, args, body)
@@ -100,7 +108,7 @@ module RuboCop
         def names_match?(method_name, body)
           ivar_name, = *body
 
-          method_name.to_s.chomp('=') == ivar_name[1..-1]
+          method_name.to_s.sub(/[=?]$/, '') == ivar_name[1..-1]
         end
 
         def trivial_accessor_kind(method_name, args, body)
@@ -127,6 +135,7 @@ module RuboCop
         def autocorrect_instance(node)
           method_name, args, body = *node
           unless names_match?(method_name, body) &&
+                 !predicate?(method_name) &&
                  (kind = trivial_accessor_kind(method_name, args, body))
             return
           end
